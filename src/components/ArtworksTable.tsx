@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { DataTable, DataTableSelectionChangeParams, DataTablePageParams } from 'primereact/datatable';
+import { DataTable, DataTableSelectionChangeEvent, DataTablePageEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { InputSwitch } from 'primereact/inputswitch';
 import { OverlayPanel } from 'primereact/overlaypanel';
@@ -23,7 +23,7 @@ const ArtworksTable: React.FC = () => {
   const [page, setPage] = useState(1);
   const [selectedArtworks, setSelectedArtworks] = useState<Artwork[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [rowClick, setRowClick] = useState(true); // New state for row click or checkbox selection
+  const [rowClick, setRowClick] = useState(true);
   const overlayPanel = useRef<OverlayPanel>(null);
   const [checkRowsCount, setCheckRowsCount] = useState<number>(0);
 
@@ -47,14 +47,13 @@ const ArtworksTable: React.FC = () => {
         artist_display: item.artist_display,
         inscriptions: item.inscriptions,
         date_start: item.date_start,
-        date_end: item.date_end
+        date_end: item.date_end,
       }));
 
       setArtworks(artworksData);
       setTotalRecords(response.data.pagination.total);
 
-      // Maintain the previously selected rows on page change
-      const selectedRowsOnPage = artworksData.filter((artwork) => selectedIds.has(artwork.id));
+      const selectedRowsOnPage = artworksData.filter((artwork: Artwork) => selectedIds.has(artwork.id));
       setSelectedArtworks(selectedRowsOnPage);
     } catch (error) {
       console.error('Error fetching artworks:', error);
@@ -63,14 +62,13 @@ const ArtworksTable: React.FC = () => {
     }
   };
 
-  const onPageChange = (event: DataTablePageParams) => {
+  const onPageChange = (event: DataTablePageEvent) => {
     setPage(event.page + 1);
   };
 
-  const onRowSelect = (event: DataTableSelectionChangeParams) => {
+  const onRowSelect = (event: DataTableSelectionChangeEvent) => {
     const selectedIdsUpdate = new Set(event.value.map((item: Artwork) => item.id));
 
-    // Manage adding/removing selected rows from the current state
     const newSelectedIds = new Set(selectedIds);
     for (const id of selectedIdsUpdate) {
       newSelectedIds.add(id);
@@ -89,7 +87,7 @@ const ArtworksTable: React.FC = () => {
     let remainingRows = rowsToCheck;
     let currentPage = 1;
 
-    while (remainingRows > 0 && currentPage <= Math.ceil(totalRecords / 10)) { // Assuming 10 rows per page
+    while (remainingRows > 0 && currentPage <= Math.ceil(totalRecords / 10)) {
       const response = await axios.get(`https://api.artic.edu/api/v1/artworks?page=${currentPage}`);
       const data = response.data.data.map((item: any) => ({
         id: item.id,
@@ -98,30 +96,25 @@ const ArtworksTable: React.FC = () => {
         artist_display: item.artist_display,
         inscriptions: item.inscriptions,
         date_start: item.date_start,
-        date_end: item.date_end
+        date_end: item.date_end,
       }));
 
       const availableRows = data.length;
+      const selectedRowsOnPage = data.filter((artwork: Artwork) => selectedIds.has(artwork.id));
 
-      // Get already selected rows on the current page
-      const selectedRowsOnPage = data.filter((artwork) => selectedIds.has(artwork.id));
-
-      // Uncheck extra rows if we exceed the new count
       if (selectedRowsOnPage.length > rowsToCheck) {
-        selectedRowsOnPage.slice(rowsToCheck).forEach((row) => selectedIds.delete(row.id));
+        selectedRowsOnPage.slice(rowsToCheck).forEach((row: Artwork) => selectedIds.delete(row.id));
         setSelectedIds(new Set(selectedIds));
         break;
       }
 
-      // Check rows on the current page
       const rowsToSelect = data.slice(0, Math.min(availableRows, remainingRows));
-      rowsToSelect.forEach((row) => selectedIds.add(row.id));
+      rowsToSelect.forEach((row: Artwork) => selectedIds.add(row.id));
       remainingRows -= rowsToSelect.length;
       currentPage++;
     }
 
-    // Update state
-    const updatedSelectedArtworks = artworks.filter((artwork) => selectedIds.has(artwork.id));
+    const updatedSelectedArtworks = artworks.filter((artwork: Artwork) => selectedIds.has(artwork.id));
     setSelectedArtworks(updatedSelectedArtworks);
   };
 
@@ -144,7 +137,7 @@ const ArtworksTable: React.FC = () => {
       <DataTable
         value={artworks}
         paginator
-        rows={10} // Assuming 10 rows per page
+        rows={10}
         totalRecords={totalRecords}
         loading={loading}
         lazy
@@ -156,16 +149,19 @@ const ArtworksTable: React.FC = () => {
         tableStyle={{ minWidth: '50rem' }}
       >
         <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
-        <Column field="title" header={
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            Title
-            <Button
-              icon="pi pi-filter"
-              className="p-button-text p-ml-2"
-              onClick={(e) => overlayPanel.current?.toggle(e)}
-            />
-          </div>
-        } />
+        <Column
+          field="title"
+          header={
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              Title
+              <Button
+                icon="pi pi-filter"
+                className="p-button-text p-ml-2"
+                onClick={(e) => overlayPanel.current?.toggle(e)}
+              />
+            </div>
+          }
+        />
         <Column field="place_of_origin" header="Place of Origin" sortable></Column>
         <Column field="artist_display" header="Artist" sortable></Column>
         <Column field="inscriptions" header="Inscriptions" sortable></Column>
@@ -173,7 +169,6 @@ const ArtworksTable: React.FC = () => {
         <Column field="date_end" header="Date End" sortable></Column>
       </DataTable>
 
-      {/* Overlay Panel */}
       <OverlayPanel ref={overlayPanel}>
         <div className="p-field">
           <label htmlFor="rowsToCheck">Number of rows to check:</label>
