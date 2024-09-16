@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { DataTable, DataTablePageEvent } from 'primereact/datatable';
+import { DataTable, DataTableSelectionChangeEvent, DataTablePageEvent } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { InputSwitch } from 'primereact/inputswitch';
 import { OverlayPanel } from 'primereact/overlaypanel';
